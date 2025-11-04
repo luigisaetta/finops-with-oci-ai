@@ -66,11 +66,16 @@ references:
 
 # Monthly Spend Cap per Compartment
 
-**Intent.** Keep compartment-level cloud spend aligned to approved limits while allowing early warning and course correction.
+**Intent.** 
+Keep compartment-level cloud spend aligned to approved limits while allowing early warning and course correction.
 
-**Hard Cap.** By the last calendar day of the month (**Europe/Rome**), the compartment’s **MTD actual** must be **≤ $400**.
+**Hard Cap.** 
 
-**Soft Cap (Forecast).** On any day, the **projected end-of-month** spend (MTD actual + average daily × remaining days) must be **≤ $400**.
+By the last calendar day of the month (**Europe/Rome**), the compartment’s **MTD actual** must be **≤ $400**.
+
+**Soft Cap (Forecast).** 
+
+On any day, the **projected end-of-month** spend (MTD actual + average daily × remaining days) must be **≤ $400**.
 
 **Notes & Edge Cases.**
 - Ignore the first few days (`min_days_observed`) to avoid unstable averages.
