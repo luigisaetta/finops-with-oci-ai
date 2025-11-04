@@ -100,7 +100,4 @@ It ensures that:
 
 ---
 
-*Author: [Your Name / Team]*  
-*Repository: FinOps-Copilot on OCI / CrewAI Demo*  
-*License: Apache 2.0 (or specify your project’s license)*
 
