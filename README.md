@@ -9,7 +9,7 @@ FinOps is not only about reducing costs — it’s about making **cloud decision
 
 A successful FinOps practice ensures that:
 - Every dollar spent in the cloud is **visible** and **attributable**;
-- Engineering teams are **accountable** for the resources they deploy;
+- Teams are **accountable** for the resources they deploy;
 - Continuous **optimization** keeps performance high and waste low.
 
 ---
@@ -41,6 +41,8 @@ This cycle repeats continuously as usage patterns evolve.
 
 ## ⚙️ FinOps Checks & Best Practices
 
+These are examples to use as starting point:
+
 | Category | Typical Checks | Best Practices |
 |-----------|----------------|----------------|
 | **Tagging & Attribution** | All resources must have `Department`, `Project`, `Environment`, `Owner` tags | Enforce tags automatically; aim for ≥95% coverage |
@@ -55,6 +57,8 @@ This cycle repeats continuously as usage patterns evolve.
 ---
 
 ## 📏 Key FinOps Metrics
+
+These are examples to use as starting point:
 
 | KPI | Target | What It Means |
 |-----|---------|---------------|
@@ -95,7 +99,7 @@ It ensures that:
 ### 📝 Suggested Next Steps
 - Define **FinOps policies** (e.g., tagging, budgets, GPU usage, DB density)  
 - Implement **MCP tools** to retrieve spend and compliance data  
-- Use **CrewAI or similar orchestration** to automate analysis and reporting  
+- Use **Agents' frameworks like CrewAI or similar** to automate analysis and reporting  
 - Visualize results with **Streamlit or dashboards**
 
 ---
