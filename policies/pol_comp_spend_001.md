@@ -1,5 +1,5 @@
 ---
-id: POL_COMP_SPEND_001
+id: POL-COMP-SPEND-001
 version: 1.0.0
 title: Monthly Spend Cap per Compartment
 # proposed | active | deprecated
