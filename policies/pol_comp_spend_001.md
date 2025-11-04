@@ -66,23 +66,21 @@ references:
 
 # Monthly Spend Cap per Compartment
 
-**Intent.** 
+## Intent 
 Keep compartment-level cloud spend aligned to approved limits while allowing early warning and course correction.
 
-**Hard Cap.** 
-
+## Hard Cap 
 By the last calendar day of the month (**Europe/Rome**), the compartment’s **MTD actual** must be **≤ $400**.
 
-**Soft Cap (Forecast).** 
-
+## Soft Cap (Forecast)
 On any day, the **projected end-of-month** spend (MTD actual + average daily × remaining days) must be **≤ $400**.
 
-**Notes & Edge Cases.**
+## Notes & Edge Cases
 - Ignore the first few days (`min_days_observed`) to avoid unstable averages.
 - Use business calendar if applicable; otherwise calendar month.
 - Temporary breach can be exempted via `BudgetExempt=true` after approval.
 
-**Remediation Examples.**
+## Remediation Examples
 - Pause non-critical workloads; postpone experiments.
 - Rightsize or schedule resources; enforce lifecycle rules for storage.
 - If justified, initiate a budget increase request.
