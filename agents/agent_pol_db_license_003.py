@@ -1,13 +1,13 @@
 """
 CrewAI agent with MCP
 
-Enforces POL-DB-LIMIT-002 (Autonomous Database Count Limit per Compartment).
+Enforces POL-DB-LICENSE-003 (All Autonomous Databases must be BYOL).
 
 Approach:
 - Use --month YYYY-MM to define the time window for "Database" spend ranking
 - Step 1: via MCP, get TOP_N compartments by 'Database' amount (USD) in the month
-- Step 2: via MCP, count Autonomous Databases for each of those top compartments
-- Apply soft/hard limits (actuals only, no forecast)
+- Step 2: via MCP, list ADBs for those compartments and check license_model
+- Hard requirement (no soft): license_model == "BRING_YOUR_OWN_LICENSE" unless exempt
 - Save Markdown report + machine-readable FINDINGS JSON
 """
 
@@ -31,10 +31,8 @@ from agents_config import LITELLM_GATEWAY_URL, MCP_OCI_CONSUMPTION_URL
 
 
 # -------------------- Policy Parameters (POL-DB-LIMIT-002) --------------------
-SOFT_LIMIT_COUNT = 2
-HARD_LIMIT_COUNT = 4
-# exclude from effective count
-EXEMPT_TAGS = ["HighAvailability", "Clustered", "DR"]
+ALLOWED_LICENSE_MODELS = ["BRING_YOUR_OWN_LICENSE"]  # BYOL only
+EXEMPT_TAGS = []
 TOP_N_COMPARTMENTS = 10
 
 
@@ -54,63 +52,54 @@ def parse_args():
 
 # -------------------- Task description builder --------------------
 def build_task_description(month_str: str, bounds: dict) -> str:
-    """
-    Builds the task description for the agent, including policy parameters and data requirements.
-    month_str: "YYYY-MM"
-    bounds: output of month_bounds()
-
-    be careful if you want to modify this prompt, it is crucial for correct agent operation.
-    """
     start_str = bounds["start"].date().isoformat()
     end_str = bounds["end"].date().isoformat()
 
     return f"""
-You are enforcing **POL-DB-LIMIT-002 (Autonomous Database Count Limit per Compartment)**.
+You are enforcing **POL-DB-LICENSE-003 (BYOL license model for Autonomous Databases)**.
 
-**Time window (actuals only)**
+**Time window (for TOP list only)**
 - From: {start_str}
 - To:   {end_str}
 - Timezone: Europe/Rome
 
-**Policy thresholds**
-- SOFT limit: ≤ {SOFT_LIMIT_COUNT} Autonomous Databases (ADB) per compartment
-- HARD limit: ≤ {HARD_LIMIT_COUNT} Autonomous Databases (ADB) per compartment
-- Exempt tags (excluded from effective count): {EXEMPT_TAGS}
+**Policy (hard requirement)**
+- Every ADB must have `license_model` in {ALLOWED_LICENSE_MODELS}.
+- Exemptions via tags (any=value): {EXEMPT_TAGS}.
+- There is **no soft limit**: any non-BYOL without exemption is **non-compliant**.
 
 **Approach (minimize tool calls)**
 1) Using MCP tools, compute the **TOP {TOP_N_COMPARTMENTS} compartments by 'Database' amount (USD)** within [{start_str}, {end_str}].
-   - Use amount (USD) not quantity.
-   - Filter/aggregate by service/category equivalent to "Database".
+   - Use amount (USD), not quantity.
+   - Filter/aggregate by the service equal to "Database".
    - Return a list of top compartments by spend (descending).
 
-2) For **each of those top compartments**, use MCP to **list/count Autonomous Databases** (ADB).
-   - Include defined and freeform tags so we can detect exemptions.
-   - Compute:
-        total_count = number of ADBs (all)
-        exempted_count = number of ADBs that have ANY of the exempt tags {EXEMPT_TAGS}
-        effective_count = total_count - exempted_count
-   - If you get an error for a compartment, continue with the next.
-   - Ensure that you call the needed tool for each of the TOP {TOP_N_COMPARTMENTS} compartments.
+2) For **each of those top compartments**, use MCP to **list Autonomous Databases** (ADB).
+   - Include fields: display_name, ocid, compartment, license_model, and tags (defined + freeform).
+   - For each ADB:
+        exempt = has ANY tag in {EXEMPT_TAGS}
+        compliant = (license_model in {ALLOWED_LICENSE_MODELS}) OR exempt
+   - Compute per compartment:
+        total_adb = number of ADBs (all)
+        non_compliant = list of ADBs where compliant == False
 
-3) Evaluate policy:
-   - soft_breach = (effective_count > {SOFT_LIMIT_COUNT})
-   - hard_breach = (effective_count > {HARD_LIMIT_COUNT})
+3) Evaluate policy (hard only):
+   - hard_breach = (len(non_compliant) > 0)
 
 **Output requirements**
 1) A concise **Markdown report**:
-   - Table: TOP compartments by 'Database' spend with columns:
-     [compartment, database_spend_usd, total_count, exempted_count, effective_count, soft_breach, hard_breach]
-   - Short recommendations for any breached compartments (e.g., consolidate, justify with tags, decommission).
+   - Table for TOP compartments:
+     [compartment, database_spend_usd, total_adb, non_compliant_count, hard_breach]
+   - Under the table, if a compartment is in breach, list the offending DBs with (display_name, ocid, license_model).
 
 2) A **machine-readable JSON** called FINDINGS at the end of your answer in a fenced code block:
    ```json
    {{
-     "policy_id": "POL-DB-LIMIT-002",
+     "policy_id": "POL-DB-LICENSE-003",
      "month": "{month_str}",
      "timezone": "Europe/Rome",
      "limits": {{
-       "soft": {SOFT_LIMIT_COUNT},
-       "hard": {HARD_LIMIT_COUNT},
+       "allowed_license_models": {json.dumps(ALLOWED_LICENSE_MODELS)},
        "exempt_tags": {json.dumps(EXEMPT_TAGS)}
      }},
      "top_by_database_spend": {TOP_N_COMPARTMENTS},
@@ -118,11 +107,16 @@ You are enforcing **POL-DB-LIMIT-002 (Autonomous Database Count Limit per Compar
        {{
          "compartment": "<name-or-ocid>",
          "database_spend_usd": 0.0,
-         "total_count": 0,
-         "exempted_count": 0,
-         "effective_count": 0,
-         "soft_breach": false,
-         "hard_breach": false
+         "total_adb": 0,
+         "non_compliant_count": 0,
+         "hard_breach": false,
+         "non_compliant": [
+           {{
+             "display_name": "<db-name>",
+             "ocid": "<db-ocid>",
+             "license_model": "<value>"
+           }}
+         ]
        }}
      ]
    }}
@@ -170,7 +164,7 @@ def save_findings_json_from_result(
         timestamp = datetime.now(ZoneInfo(tz)).strftime("%Y%m%d_%H%M%S")
 
     json_path = os.path.join(
-        output_dir, f"oci_db_limit_findings_{month}_{timestamp}.json"
+        output_dir, f"oci_db_license_findings_{month}_{timestamp}.json"
     )
     with open(json_path, "w", encoding="utf-8") as jf:
         json.dump(findings, jf, indent=2)
@@ -212,8 +206,8 @@ def main():
         # print(f"Available tools: {[tool.name for tool in mcp_tools]}")
 
         agent = Agent(
-            role="ADB Density Compliance Analyst",
-            goal="Check compartments against ADB count limits using minimal tool calls.",
+            role="ADB License Compliance Analyst",
+            goal="Ensure ADBs in the top spender compartments use BYOL, minimizing tool calls.",
             backstory="FinOps-oriented analyst using OCI Consumption and Inventory MCP tools.",
             llm=llm,
             tools=mcp_tools,
@@ -226,7 +220,7 @@ def main():
             description=build_task_description(args.month, bounds),
             expected_output=(
                 "Markdown report + FINDINGS JSON (as specified). "
-                "Use amount (USD) only for Database spend; count Autonomous Databases via inventory."
+                "Use amount (USD) only for 'Database' spend; list ADBs and verify license_model."
             ),
             agent=agent,
         )
@@ -240,7 +234,7 @@ def main():
     # Save outputs
     output_dir = "reports"
     timestamp, _ = save_markdown_report(
-        "db_limit_report", str(result), args.month, output_dir
+        "db_license_report", str(result), args.month, output_dir
     )
     _ = save_findings_json_from_result(
         str(result),

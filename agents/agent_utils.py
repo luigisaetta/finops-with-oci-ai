@@ -1,8 +1,11 @@
 """
 Agent utils
 """
+
+import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
 
 def month_bounds(year: int, month: int, tz: str = "Europe/Rome"):
     """
@@ -37,3 +40,23 @@ def month_bounds(year: int, month: int, tz: str = "Europe/Rome"):
         "remaining_days": max(0, remaining_days),
         "is_month_end": is_month_end,
     }
+
+
+def save_markdown_report(
+    report_type: str,
+    result_text: str,
+    month: str,
+    output_dir: str = "reports",
+    tz: str = "Europe/Rome",
+) -> tuple[str, str]:
+    """
+    Save the agent's Markdown output to reports/<file>.md.
+    Returns (timestamp, md_path).
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    timestamp = datetime.now(ZoneInfo(tz)).strftime("%Y%m%d_%H%M%S")
+    md_path = os.path.join(output_dir, f"{report_type}_{month}_{timestamp}.md")
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(result_text)
+    print(f"\n✅ Report saved successfully to: {md_path}")
+    return timestamp, md_path
