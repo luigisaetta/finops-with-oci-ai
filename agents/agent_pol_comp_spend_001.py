@@ -231,10 +231,9 @@ def main():
         year, month = map(int, args.month.split("-"))
         bounds = month_bounds(year, month, tz="Europe/Rome")
     except Exception as e:
-        print(f"❌ Invalid --month value '{args.month}'. Use YYYY-MM. Error: {e}")
         raise SystemExit(
             f"❌ Invalid --month value '{args.month}'. Use YYYY-MM. Error: {e}"
-        )
+        ) from e
 
     # LLM
     llm = LLM(
@@ -272,7 +271,8 @@ def main():
 
         research_task = Task(
             description=task_description,
-            expected_output="Markdown report + FINDINGS JSON (as specified). Use amount (USD) only.",
+            expected_output="Markdown report + FINDINGS JSON (as specified). "
+            "Use amount (USD) only.",
             agent=research_agent,
         )
 
