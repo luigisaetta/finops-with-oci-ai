@@ -20,7 +20,6 @@ checks:
     severity: high
     description: "MTD actual spend must be <= hard_cap_usd at month end."
     evaluate:
-      mcp: "mcp://oci/cost.aggregate"
       inputs: { window: "MTD", group_by: ["compartment"] }
       logic: |
         if today == month_end:
@@ -35,7 +34,6 @@ checks:
     severity: high
     description: "At any time, MTD + projected remainder must be <= soft_cap_usd."
     evaluate:
-      mcp: "mcp://oci/cost.aggregate"
       inputs: { window: "MTD_DAILY", group_by: ["compartment"] }
       logic: |
         if days_observed >= params.min_days_observed:
