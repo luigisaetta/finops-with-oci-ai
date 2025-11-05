@@ -2,11 +2,13 @@
 id: POL-DB-LIMIT-002
 version: 1.0.0
 title: Autonomous Database Count Limit per Compartment
-status: proposed               # proposed | active | deprecated
+# proposed | active | deprecated
+status: proposed               
 owners: ["finops@company.example"]
 scope:
   resource: "compartment"
-  selector: { include: ["*"], exclude: [] }   # list of compartment names
+  # list of compartment names
+  selector: { include: ["*"], exclude: [] }   
 timezone: "Europe/Rome"
 parameters:
   soft_limit_count: 2
