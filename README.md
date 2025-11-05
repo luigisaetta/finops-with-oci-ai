@@ -98,7 +98,7 @@ It ensures that:
 ## 🧠 What Comes Next
 
 Over time, this repository will include [practical examples of FinOps policies](./policies/)  
-and [AI Agents](./agents/) (based on CrewAI, OCI Generative AI, and MCP tools)  
+and [AI Agents](./agents/) (based on [CrewAI](https://www.crewai.com/), OCI Generative AI, and MCP tools)  
 that demonstrate how to **apply FinOps principles automatically**.
 
 Each example will show:
