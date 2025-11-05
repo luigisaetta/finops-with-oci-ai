@@ -97,15 +97,15 @@ It ensures that:
 ---
 ## 🧠 What Comes Next
 
-Over time, this repository will include **practical examples of FinOps policies**  
-and **AI Agents** (based on CrewAI, OCI Generative AI, and MCP tools)  
+Over time, this repository will include [practical examples of FinOps policies](./policies/)  
+and [AI Agents](./agents/) (based on CrewAI, OCI Generative AI, and MCP tools)  
 that demonstrate how to **apply FinOps principles automatically**.
 
 Each example will show:
 - A specific **FinOps rule or best practice** (e.g., budget cap, DB density, tagging compliance)  
 - The **MCP tools** and **APIs** used to gather data and enforce it  
 - A **Crew of Agents** coordinating the analysis, reasoning, and reporting  
-- Streamlit UIs to visualize costs, compliance, and recommendations
+- (Optional) Streamlit UIs to visualize costs, compliance, and recommendations
 
 The long-term goal is to create an **open and evolving FinOps Copilot**  
 that helps organizations bring accountability, visibility, and optimization to their cloud operations.
